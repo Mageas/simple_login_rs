@@ -14,6 +14,12 @@ pub enum SimpleLoginError {
     #[error("Token not set")]
     TokenNotSet,
 
+    #[error("Sudo is needed to access this endpoint")]
+    NeedSudo,
+
+    #[error("Too many wrong tries, please ask for a reactivation 'api/auth/reactivate'")]
+    TooManyWrongTries,
+
     #[error("Unable to deserialize the error from the bad request")]
     DeserializeApiErrorResponse(#[source] serde_json::Error),
 

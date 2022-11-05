@@ -11,15 +11,17 @@ where
     S: AsRef<str>,
     D: AsRef<str> + std::fmt::Display,
 {
-    match status {
-        StatusCode::OK => Ok(()),
-        StatusCode::BAD_REQUEST => {
+    match status.as_u16() {
+        200 | 201 => Ok(()),
+        400 | 403 => {
             let error = serde_json::from_str::<ErrorData>(body.as_ref())
                 .map_err(|e| SimpleLoginError::DeserializeApiErrorResponse(e))?;
 
             Err(SimpleLoginError::ApiErrorResponse { error: error.error })
         }
-        StatusCode::UNAUTHORIZED => Err(SimpleLoginError::BadCredentials),
+        401 => Err(SimpleLoginError::BadCredentials),
+        410 => Err(SimpleLoginError::TooManyWrongTries),
+        440 => Err(SimpleLoginError::NeedSudo),
         _ => Err(SimpleLoginError::RequestStatusCode {
             path: path.to_string(),
             status,
