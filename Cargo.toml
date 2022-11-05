@@ -1,0 +1,17 @@
+[package]
+name = "simple_login_rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Mageas <dev@mageas.net>"]
+description = "Wrapper for simplelogin.io"
+documentation = "https://docs.rs/simple_login_rs"
+keywords = ["simplelogin"]
+license = "GPL-3.0"
+repository = "https://gitea.heartnerds.org/Mageas/simple_login_rs"
+
+
+[dependencies]
+serde = { version = "1.0.147", features = ["derive"] }
+serde_json = "1.0.87"
+reqwest = { version = "0.11.12", features = ["json"] }
+thiserror = "1.0.37"
