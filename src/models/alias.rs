@@ -58,3 +58,63 @@ pub struct AliasLatestActivityContactData {
     pub name: Option<String>,
     pub reverse_alias: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct DeleteAliasData {
+    pub deleted: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AliasToggleData {
+    pub enabled: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AliasActivityData {
+    pub action: String,
+    pub from: String,
+    pub timestamp: usize,
+    pub to: String,
+    pub reverse_alias: String,
+    pub reverse_alias_address: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AliasActivitiesData {
+    pub activities: Vec<AliasActivityData>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateAliasData {
+    pub ok: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AliasConcactData {
+    pub id: usize,
+    pub contact: String,
+    pub creation_date: String,
+    pub creation_timestamp: usize,
+    pub last_email_sent_date: Option<String>,
+    pub last_email_sent_timestamp: Option<usize>,
+    pub reverse_alias: String,
+    pub block_forward: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AliasConcactsData {
+    pub contacts: Vec<AliasConcactData>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AliasUpdateConcactData {
+    pub id: usize,
+    pub contact: String,
+    pub creation_date: String,
+    pub creation_timestamp: usize,
+    pub last_email_sent_date: Option<String>,
+    pub last_email_sent_timestamp: Option<usize>,
+    pub reverse_alias: String,
+    pub reverse_alias_address: String,
+    pub existed: bool,
+}

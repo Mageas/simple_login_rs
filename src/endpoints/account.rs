@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::account::{
     ActivateData, ApiKeyData, CookieTokenData, DeleteUserData, ForgotPasswordData, LoginData,
     LogoutData, MfaData, ReactivateData, RegisterData, SudoData, UserInfoData,
@@ -23,7 +25,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .0
             .get_http()
             .post(self.0.get_url(endpoint))
-            .json(&std::collections::HashMap::from([
+            .json(&HashMap::from([
                 ("email", email),
                 ("password", password),
                 ("device", device),
@@ -57,7 +59,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .0
             .get_http()
             .post(self.0.get_url(endpoint))
-            .json(&std::collections::HashMap::from([
+            .json(&HashMap::from([
                 ("mfa_token", mfa_token),
                 ("mfa_key", mfa_key),
                 ("device", device),
@@ -86,10 +88,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .0
             .get_http()
             .post(self.0.get_url(endpoint))
-            .json(&std::collections::HashMap::from([
-                ("email", email),
-                ("password", password),
-            ]))
+            .json(&HashMap::from([("email", email), ("password", password)]))
             .send()
             .await
             .map_err(|e| SimpleLoginError::GenericRequest(e, endpoint.into()))?;
@@ -114,10 +113,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .0
             .get_http()
             .post(self.0.get_url(endpoint))
-            .json(&std::collections::HashMap::from([
-                ("email", email),
-                ("code", code),
-            ]))
+            .json(&HashMap::from([("email", email), ("code", code)]))
             .send()
             .await
             .map_err(|e| SimpleLoginError::GenericRequest(e, endpoint.into()))?;
@@ -142,7 +138,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .0
             .get_http()
             .post(self.0.get_url(endpoint))
-            .json(&std::collections::HashMap::from([("email", email)]))
+            .json(&HashMap::from([("email", email)]))
             .send()
             .await
             .map_err(|e| SimpleLoginError::GenericRequest(e, endpoint.into()))?;
@@ -167,7 +163,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .0
             .get_http()
             .post(self.0.get_url(endpoint))
-            .json(&std::collections::HashMap::from([("email", email)]))
+            .json(&HashMap::from([("email", email)]))
             .send()
             .await
             .map_err(|e| SimpleLoginError::GenericRequest(e, endpoint.into()))?;
@@ -195,7 +191,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .get_http()
             .patch(self.0.get_url(endpoint))
             .header("Authentication", token)
-            .json(&std::collections::HashMap::from([("password", password)]))
+            .json(&HashMap::from([("password", password)]))
             .send()
             .await
             .map_err(|e| SimpleLoginError::GenericRequest(e, endpoint.into()))?;
@@ -308,7 +304,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .get_http()
             .patch(self.0.get_url(endpoint))
             .header("Authentication", token)
-            .json(&std::collections::HashMap::from([
+            .json(&HashMap::from([
                 ("profile_picture", profile_picture),
                 ("name", name),
             ]))
@@ -339,7 +335,7 @@ impl<S: SimpleLogin> EndpointsAccount<'_, S> {
             .get_http()
             .post(self.0.get_url(endpoint))
             .header("Authentication", token)
-            .json(&std::collections::HashMap::from([("device", device)]))
+            .json(&HashMap::from([("device", device)]))
             .send()
             .await
             .map_err(|e| SimpleLoginError::GenericRequest(e, endpoint.into()))?;
