@@ -3,93 +3,29 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 
 pub use account::*;
-pub use alias::*;
+// pub use alias::*;
 
 use crate::{SimpleLoginError, SimpleLoginResult};
 
 mod account;
-mod alias;
+// mod alias;
 mod utils;
 
-#[async_trait]
 pub trait SimpleLogin {
-    fn get_http(&self) -> &reqwest::Client;
+    fn get_http(&self) -> &HttpClient;
     fn get_token(&self) -> Option<&str>;
     fn get_url<S: AsRef<str> + std::fmt::Display>(&self, endpoint: S) -> String;
     fn get_hostname(&self) -> &str;
-
-    async fn request<B, Q>(
-        &self,
-        authentication: bool,
-        method: reqwest::Method,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send;
-
-    async fn get<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send;
-
-    async fn post<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send;
-
-    async fn put<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send;
-
-    async fn patch<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send;
-
-    async fn delete<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send;
 }
 
 pub struct SimpleLoginClient<'a> {
-    pub http: reqwest::Client,
-    pub token: Option<&'a str>,
+    pub http: HttpClient,
     pub hostname: &'a str,
+    pub token: Option<&'a str>,
 }
 
-#[async_trait]
 impl SimpleLogin for SimpleLoginClient<'_> {
-    fn get_http(&self) -> &reqwest::Client {
+    fn get_http(&self) -> &HttpClient {
         &self.http
     }
 
@@ -104,145 +40,152 @@ impl SimpleLogin for SimpleLoginClient<'_> {
     fn get_hostname(&self) -> &str {
         &self.hostname
     }
-
-    /// Get request api
-    async fn get<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send,
-    {
-        self.request(true, reqwest::Method::GET, endpoint, body, query)
-            .await
-    }
-
-    /// Post request api
-    async fn post<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send,
-    {
-        self.request(true, reqwest::Method::POST, endpoint, body, query)
-            .await
-    }
-
-    /// Put request api
-    async fn put<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send,
-    {
-        self.request(true, reqwest::Method::PUT, endpoint, body, query)
-            .await
-    }
-
-    /// Patch request api
-    async fn patch<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send,
-    {
-        self.request(true, reqwest::Method::PATCH, endpoint, body, query)
-            .await
-    }
-
-    /// Delete request api
-    async fn delete<B, Q>(
-        &self,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send,
-    {
-        self.request(true, reqwest::Method::DELETE, endpoint, body, query)
-            .await
-    }
-
-    /// Make the request
-    async fn request<B, Q>(
-        &self,
-        authentication: bool,
-        method: reqwest::Method,
-        endpoint: &str,
-        body: Option<B>,
-        query: Option<Q>,
-    ) -> SimpleLoginResult<String>
-    where
-        B: serde::Serialize + Send,
-        Q: serde::Serialize + Send,
-    {
-        let mut request = self
-            .get_http()
-            .request(method.clone(), self.get_url(&endpoint));
-
-        if let true = authentication {
-            let token = self.get_token().ok_or(SimpleLoginError::TokenNotSet)?;
-            request = request.header("Authentication", token);
-        }
-
-        if let Some(body) = body {
-            request = request.json(&body);
-        }
-
-        if let Some(query) = query {
-            request = request.query(&query);
-        }
-
-        let response = request
-            .send()
-            .await
-            .map_err(|e| SimpleLoginError::GenericRequest(e, endpoint.into()))?;
-
-        let status = response.status();
-        let response = response
-            .text()
-            .await
-            .map_err(|e| SimpleLoginError::GenericRequest(e, endpoint.into()))?;
-
-        dbg!(&response);
-
-        utils::parse_error_from_response(&response, status, endpoint).await?;
-
-        Ok(response)
-    }
 }
 
 impl<'a> SimpleLoginClient<'a> {
     pub fn new(hostname: &'a str) -> Self {
         Self {
-            http: reqwest::Client::new(),
-            token: None,
+            http: HttpClient {
+                client: reqwest::Client::new(),
+            },
             hostname,
+            token: None,
         }
+    }
+
+    pub fn test(&self) -> EndpointsAccount<'_, Self> {
+        EndpointsAccount(self)
     }
 
     pub fn account(&self) -> EndpointsAccount<'_, Self> {
         EndpointsAccount(self)
     }
 
-    pub fn alias(&self) -> EndpointsAlias<'_, Self> {
-        EndpointsAlias(self)
+    // pub fn alias(&self) -> EndpointsAlias<'_, Self> {
+    //     EndpointsAlias(self)
+    // }
+}
+
+use crate::{BaseHttpClient, Payload};
+
+use reqwest::{Method, RequestBuilder};
+
+#[derive(Default, Debug, Clone)]
+pub struct HttpClient {
+    client: reqwest::Client,
+}
+
+impl HttpClient {
+    async fn request<D>(
+        &self,
+        token: Option<&str>,
+        method: Method,
+        url: &str,
+        add_data: D,
+    ) -> SimpleLoginResult<String>
+    where
+        D: Fn(RequestBuilder) -> RequestBuilder,
+    {
+        let mut request = self.client.request(method.clone(), url);
+
+        if let Some(token) = token {
+            // let token = self.token.ok_or(SimpleLoginError::TokenNotSet)?;
+            request = request.header("Authentication", token);
+        }
+
+        request = add_data(request);
+
+        let response = request
+            .send()
+            .await
+            .map_err(|e| SimpleLoginError::Request(e, url.into()))?;
+
+        let status = response.status();
+        let response = response
+            .text()
+            .await
+            .map_err(|e| SimpleLoginError::Request(e, url.into()))?;
+
+        dbg!(&response);
+
+        utils::parse_error_from_response(&response, status, url).await?;
+
+        Ok(response)
     }
+}
+
+#[async_trait]
+impl BaseHttpClient for HttpClient {
+    #[inline]
+    async fn get(
+        &self,
+        token: Option<&str>,
+        url: &str,
+        payload: &Payload,
+    ) -> SimpleLoginResult<String> {
+        self.request(token, Method::GET, url, |req| set_payload(req, payload))
+            .await
+    }
+
+    #[inline]
+    async fn post(
+        &self,
+        token: Option<&str>,
+        url: &str,
+        payload: &Payload,
+    ) -> SimpleLoginResult<String> {
+        self.request(token, Method::POST, url, |req| set_payload(req, payload))
+            .await
+    }
+
+    #[inline]
+    async fn post_public(&self, url: &str, payload: &Payload) -> SimpleLoginResult<String> {
+        self.request(None, Method::POST, url, |req| set_payload(req, payload))
+            .await
+    }
+
+    #[inline]
+    async fn put(
+        &self,
+        token: Option<&str>,
+        url: &str,
+        payload: &Payload,
+    ) -> SimpleLoginResult<String> {
+        self.request(token, Method::PUT, url, |req| set_payload(req, payload))
+            .await
+    }
+
+    #[inline]
+    async fn patch(
+        &self,
+        token: Option<&str>,
+        url: &str,
+        payload: &Payload,
+    ) -> SimpleLoginResult<String> {
+        self.request(token, Method::PATCH, url, |req| set_payload(req, payload))
+            .await
+    }
+
+    #[inline]
+    async fn delete(
+        &self,
+        token: Option<&str>,
+        url: &str,
+        payload: &Payload,
+    ) -> SimpleLoginResult<String> {
+        self.request(token, Method::DELETE, url, |req| set_payload(req, payload))
+            .await
+    }
+}
+
+fn set_payload(req: RequestBuilder, payload: &Payload) -> RequestBuilder {
+    let req = match payload.0 {
+        Some(query) => req.query(query),
+        None => req,
+    };
+    let req = match payload.1 {
+        Some(json) => req.json(json),
+        None => req,
+    };
+    req
 }

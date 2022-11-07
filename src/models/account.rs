@@ -10,6 +10,13 @@ pub struct LoginData {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct MfaData {
+    pub api_key: String,
+    pub email: String,
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct UserInfoData {
     pub connected_proton_address: Option<String>,
     pub email: String,
@@ -21,43 +28,6 @@ pub struct UserInfoData {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct MfaData {
-    pub api_key: String,
-    pub email: String,
-    pub name: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct RegisterData {
-    pub msg: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ActivateData {
-    pub msg: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ReactivateData {
-    pub msg: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ForgotPasswordData {
-    pub ok: bool,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct SudoData {
-    pub ok: bool,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct DeleteUserData {
-    pub ok: bool,
-}
-
-#[derive(Debug, Deserialize)]
 pub struct CookieTokenData {
     pub token: String,
 }
@@ -65,9 +35,4 @@ pub struct CookieTokenData {
 #[derive(Debug, Deserialize)]
 pub struct ApiKeyData {
     pub api_key: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct LogoutData {
-    pub msg: String,
 }
