@@ -2,6 +2,7 @@ use serde::Deserialize;
 
 pub mod account;
 pub mod alias;
+pub mod mailbox;
 
 #[derive(Debug, Deserialize)]
 pub struct ErrorData {
@@ -16,6 +17,11 @@ pub struct MsgData {
 #[derive(Debug, Deserialize)]
 pub struct OkData {
     pub ok: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdatedData {
+    pub updated: bool,
 }
 
 #[derive(Debug, Deserialize)]

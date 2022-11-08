@@ -2,11 +2,13 @@ use async_trait::async_trait;
 
 pub use account::*;
 pub use alias::*;
+pub use mailbox::*;
 
 use crate::{SimpleLoginError, SimpleLoginResult};
 
 mod account;
 mod alias;
+mod mailbox;
 mod utils;
 
 pub trait SimpleLogin {
@@ -51,16 +53,16 @@ impl<'a> SimpleLoginClient<'a> {
         }
     }
 
-    pub fn test(&self) -> EndpointsAccount<'_, Self> {
-        EndpointsAccount(self)
-    }
-
     pub fn account(&self) -> EndpointsAccount<'_, Self> {
         EndpointsAccount(self)
     }
 
     pub fn alias(&self) -> EndpointsAlias<'_, Self> {
         EndpointsAlias(self)
+    }
+
+    pub fn mailbox(&self) -> EndpointsMailbox<'_, Self> {
+        EndpointsMailbox(self)
     }
 }
 
