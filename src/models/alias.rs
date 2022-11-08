@@ -1,14 +1,14 @@
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
-pub struct OptionData {
+pub struct OptionsData {
     pub can_create: bool,
     pub prefix_suggestion: String,
-    pub suffixes: Vec<OptionSuffixData>,
+    pub suffixes: Vec<OptionsSuffixData>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct OptionSuffixData {
+pub struct OptionsSuffixData {
     pub is_custom: bool,
     pub is_premium: bool,
     pub signed_suffix: String,
@@ -16,7 +16,7 @@ pub struct OptionSuffixData {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct AliasesData {
+pub(crate) struct VecAliasData {
     pub aliases: Vec<AliasData>,
 }
 
@@ -60,13 +60,13 @@ pub struct AliasLatestActivityContactData {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct DeleteAliasData {
-    pub deleted: bool,
+pub struct AliasToggleData {
+    pub enabled: bool,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct AliasToggleData {
-    pub enabled: bool,
+pub(crate) struct VecAliasActivityData {
+    pub activities: Vec<AliasActivityData>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -80,34 +80,12 @@ pub struct AliasActivityData {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct AliasActivitiesData {
-    pub activities: Vec<AliasActivityData>,
+pub struct VecAliasContactData {
+    pub contacts: Vec<AliasContactData>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct UpdateAliasData {
-    pub ok: bool,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct AliasConcactData {
-    pub id: usize,
-    pub contact: String,
-    pub creation_date: String,
-    pub creation_timestamp: usize,
-    pub last_email_sent_date: Option<String>,
-    pub last_email_sent_timestamp: Option<usize>,
-    pub reverse_alias: String,
-    pub block_forward: bool,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct AliasConcactsData {
-    pub contacts: Vec<AliasConcactData>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct AliasUpdateConcactData {
+pub struct AliasContactData {
     pub id: usize,
     pub contact: String,
     pub creation_date: String,
@@ -116,5 +94,6 @@ pub struct AliasUpdateConcactData {
     pub last_email_sent_timestamp: Option<usize>,
     pub reverse_alias: String,
     pub reverse_alias_address: String,
+    pub block_forward: bool,
     pub existed: bool,
 }

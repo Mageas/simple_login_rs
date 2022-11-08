@@ -1,14 +1,12 @@
-use std::collections::HashMap;
-
 use async_trait::async_trait;
 
 pub use account::*;
-// pub use alias::*;
+pub use alias::*;
 
 use crate::{SimpleLoginError, SimpleLoginResult};
 
 mod account;
-// mod alias;
+mod alias;
 mod utils;
 
 pub trait SimpleLogin {
@@ -61,9 +59,9 @@ impl<'a> SimpleLoginClient<'a> {
         EndpointsAccount(self)
     }
 
-    // pub fn alias(&self) -> EndpointsAlias<'_, Self> {
-    //     EndpointsAlias(self)
-    // }
+    pub fn alias(&self) -> EndpointsAlias<'_, Self> {
+        EndpointsAlias(self)
+    }
 }
 
 use crate::{BaseHttpClient, Payload};
@@ -178,6 +176,7 @@ impl BaseHttpClient for HttpClient {
     }
 }
 
+#[inline]
 fn set_payload(req: RequestBuilder, payload: &Payload) -> RequestBuilder {
     let req = match payload.0 {
         Some(query) => req.query(query),

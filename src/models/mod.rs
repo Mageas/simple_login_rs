@@ -17,3 +17,8 @@ pub struct MsgData {
 pub struct OkData {
     pub ok: bool,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct DeletedData {
+    pub deleted: bool,
+}

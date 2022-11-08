@@ -1,35 +1,46 @@
 use std::collections::HashMap;
 
-use crate::alias::AliasActivitiesData;
-use crate::alias::AliasConcactsData;
+use serde_json::json;
+
+use crate::alias::AliasActivityData;
+use crate::alias::AliasContactData;
 use crate::alias::AliasData;
 use crate::alias::AliasToggleData;
-use crate::alias::AliasUpdateConcactData;
-use crate::alias::AliasesData;
-use crate::alias::DeleteAliasData;
-use crate::alias::OptionData;
-use crate::alias::UpdateAliasData;
+use crate::alias::OptionsData;
+use crate::DeletedData;
+use crate::OkData;
 use crate::SimpleLoginError;
 use crate::SimpleLoginResult;
+
+use crate::alias::VecAliasActivityData;
+use crate::alias::VecAliasContactData;
+use crate::alias::VecAliasData;
+use crate::BaseHttpClient;
 
 use super::SimpleLogin;
 
 pub struct EndpointsAlias<'a, S: SimpleLogin>(pub(crate) &'a S);
 
 impl<S: SimpleLogin> EndpointsAlias<'_, S> {
-    /// api/v5/alias/options
-    pub async fn option(self) -> SimpleLoginResult<OptionData> {
+    /// Get alias options. Used by create alias process
+    pub async fn options(self) -> SimpleLoginResult<OptionsData> {
         let endpoint = "api/v5/alias/options";
 
-        let query = HashMap::from([("hostname", self.0.get_hostname())]);
+        let response = self
+            .0
+            .get_http()
+            .get(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(None, None),
+            )
+            .await?;
 
-        let response = self.0.get::<&str, _>(endpoint, None, Some(query)).await?;
-
-        serde_json::from_str::<OptionData>(&response)
+        serde_json::from_str::<OptionsData>(&response)
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    /// api/v3/alias/custom/new
+    /// Create new alias
     pub async fn create_custom(
         self,
         alias_prefix: &str,
@@ -52,19 +63,23 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             name: Option<&'a str>,
         }
 
+        let body = serde_json::to_value(Body {
+            hostname: self.0.get_hostname(),
+            alias_prefix,
+            signed_suffix,
+            mailbox_ids,
+            note,
+            name,
+        })
+        .unwrap();
+
         let response = self
             .0
-            .post::<_, &str>(
-                endpoint,
-                Some(Body {
-                    hostname: self.0.get_hostname(),
-                    alias_prefix: alias_prefix,
-                    signed_suffix: signed_suffix,
-                    mailbox_ids: mailbox_ids,
-                    note,
-                    name,
-                }),
-                None,
+            .get_http()
+            .post(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(None, Some(&body)),
             )
             .await?;
 
@@ -72,7 +87,8 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    /// api/alias/random/new    
+    // todo: mode to Enum
+    /// Random an alias
     pub async fn create_random(
         self,
         mode: Option<&str>,
@@ -82,23 +98,21 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
 
         #[derive(serde::Serialize)]
         struct Body<'a> {
-            hostname: &'a str,
             #[serde(skip_serializing_if = "Option::is_none")]
             mode: Option<&'a str>,
             #[serde(skip_serializing_if = "Option::is_none")]
             note: Option<&'a str>,
         }
 
+        let body = serde_json::to_value(Body { mode, note }).unwrap();
+
         let response = self
             .0
-            .post::<_, &str>(
-                endpoint,
-                Some(Body {
-                    hostname: self.0.get_hostname(),
-                    mode,
-                    note,
-                }),
-                None,
+            .get_http()
+            .post(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(None, Some(&body)),
             )
             .await?;
 
@@ -106,70 +120,115 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    /// api/v2/aliases
-    pub async fn list_aliases(
-        self,
-        page_id: usize,
-        filter: &str,
-    ) -> SimpleLoginResult<AliasesData> {
+    // todo: filter to Enum
+    // todo: update hashmap type
+    /// Get user's aliases
+    pub async fn list(self, page_id: usize, filter: &str) -> SimpleLoginResult<Vec<AliasData>> {
         let endpoint = "api/v2/aliases";
 
-        let query = HashMap::from([("page_id", page_id.to_string()), (filter, "".to_string())]);
+        let page_id = page_id.to_string();
 
-        let response = self.0.get::<&str, _>(endpoint, None, Some(query)).await?;
+        let query = HashMap::from([("page_id", page_id.as_str()), (filter, "")]);
 
-        serde_json::from_str::<AliasesData>(&response)
-            .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
+        let response = self
+            .0
+            .get_http()
+            .get(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(Some(&query), None),
+            )
+            .await?;
+
+        Ok(serde_json::from_str::<VecAliasData>(&response)
+            .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))?
+            .aliases)
     }
 
-    /// api/aliases/:alias_id
-    pub async fn get_alias(self, alias_id: usize) -> SimpleLoginResult<AliasData> {
-        let endpoint = &format!("api/aliases/{}", alias_id);
+    /// Get alias information
+    pub async fn get(self, alias_id: usize) -> SimpleLoginResult<AliasData> {
+        let endpoint = &format!("api/aliases/{alias_id}");
 
-        let response = self.0.get::<&str, &str>(endpoint, None, None).await?;
+        let response = self
+            .0
+            .get_http()
+            .get(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(None, None),
+            )
+            .await?;
 
         serde_json::from_str::<AliasData>(&response)
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    /// api/aliases/:alias_id
-    pub async fn delete_alias(self, alias_id: usize) -> SimpleLoginResult<DeleteAliasData> {
-        let endpoint = &format!("api/aliases/{}", alias_id);
+    /// Delete an alias
+    pub async fn delete(self, alias_id: usize) -> SimpleLoginResult<DeletedData> {
+        let endpoint = &format!("api/aliases/{alias_id}");
 
-        let response = self.0.delete::<&str, &str>(endpoint, None, None).await?;
+        let response = self
+            .0
+            .get_http()
+            .delete(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(None, None),
+            )
+            .await?;
 
-        serde_json::from_str::<DeleteAliasData>(&response)
+        serde_json::from_str::<DeletedData>(&response)
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    /// api/aliases/:alias_id/toggle
-    pub async fn toggle_alias(self, alias_id: usize) -> SimpleLoginResult<AliasToggleData> {
-        let endpoint = &format!("api/aliases/{}/toggle", alias_id);
+    /// Enable/disable an alias
+    pub async fn toggle(self, alias_id: usize) -> SimpleLoginResult<AliasToggleData> {
+        let endpoint = &format!("api/aliases/{alias_id}/toggle");
 
-        let response = self.0.post::<&str, &str>(endpoint, None, None).await?;
+        let response = self
+            .0
+            .get_http()
+            .post(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(None, None),
+            )
+            .await?;
 
         serde_json::from_str::<AliasToggleData>(&response)
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    /// api/aliases/:alias_id/activities
-    pub async fn alias_activities(
+    // todo: update hashmap type
+    /// Get alias activities
+    pub async fn activities(
         self,
         page_id: usize,
         alias_id: usize,
-    ) -> SimpleLoginResult<AliasActivitiesData> {
-        let endpoint = &format!("api/aliases/{}/activities", alias_id);
+    ) -> SimpleLoginResult<Vec<AliasActivityData>> {
+        let endpoint = &format!("api/aliases/{alias_id}/activities");
 
-        let query = HashMap::from([("page_id", page_id)]);
+        let page_id = page_id.to_string();
 
-        let response = self.0.get::<&str, _>(&endpoint, None, Some(query)).await?;
+        let query = HashMap::from([("page_id", page_id.as_str())]);
 
-        serde_json::from_str::<AliasActivitiesData>(&response)
-            .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
+        let response = self
+            .0
+            .get_http()
+            .get(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(Some(&query), None),
+            )
+            .await?;
+
+        Ok(serde_json::from_str::<VecAliasActivityData>(&response)
+            .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))?
+            .activities)
     }
 
-    /// api/aliases/:alias_id
-    pub async fn update_alias(
+    /// Update alias information
+    pub async fn update(
         self,
         alias_id: usize,
         note: Option<&str>,
@@ -177,8 +236,8 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
         mailbox_ids: Option<&[&str]>,
         disable_pgp: Option<bool>,
         pinned: Option<bool>,
-    ) -> SimpleLoginResult<UpdateAliasData> {
-        let endpoint = &format!("api/aliases/{}", alias_id);
+    ) -> SimpleLoginResult<OkData> {
+        let endpoint = &format!("api/aliases/{alias_id}");
 
         #[derive(serde::Serialize)]
         struct Body<'a> {
@@ -195,55 +254,81 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             pinned: Option<bool>,
         }
 
+        let body = serde_json::to_value(Body {
+            alias_id,
+            note,
+            name,
+            mailbox_ids,
+            disable_pgp,
+            pinned,
+        })
+        .unwrap();
+
         let response = self
             .0
-            .patch::<_, &str>(
-                &endpoint,
-                Some(Body {
-                    alias_id,
-                    note,
-                    name,
-                    mailbox_ids,
-                    disable_pgp,
-                    pinned,
-                }),
-                None,
+            .get_http()
+            .patch(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(None, Some(&body)),
             )
             .await?;
 
-        serde_json::from_str::<UpdateAliasData>(&response)
+        serde_json::from_str::<OkData>(&response)
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    /// api/aliases/:alias_id/contacts
-    pub async fn alias_contacts(
+    // todo: update hashmap type
+    /// Get alias contacts
+    pub async fn contacts(
         self,
         page_id: usize,
         alias_id: usize,
-    ) -> SimpleLoginResult<AliasConcactsData> {
-        let endpoint = &format!("api/aliases/{}/contacts", alias_id);
+    ) -> SimpleLoginResult<Vec<AliasContactData>> {
+        let endpoint = &format!("api/aliases/{alias_id}/contacts");
 
-        let query = HashMap::from([("page_id", page_id)]);
+        let page_id = page_id.to_string();
 
-        let response = self.0.get::<&str, _>(&endpoint, None, Some(query)).await?;
+        let query = HashMap::from([("page_id", page_id.as_str())]);
 
-        serde_json::from_str::<AliasConcactsData>(&response)
-            .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
+        let response = self
+            .0
+            .get_http()
+            .get(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(Some(&query), None),
+            )
+            .await?;
+
+        Ok(serde_json::from_str::<VecAliasContactData>(&response)
+            .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))?
+            .contacts)
     }
 
-    /// api/aliases/:alias_id/contacts
-    pub async fn create_concact(
+    /// Create a new contact for an alias
+    pub async fn create_contact(
         self,
         alias_id: usize,
         contact: &str,
-    ) -> SimpleLoginResult<AliasUpdateConcactData> {
-        let endpoint = &format!("api/aliases/{}/contacts", alias_id);
+    ) -> SimpleLoginResult<AliasContactData> {
+        let endpoint = &format!("api/aliases/{alias_id}/contacts");
 
-        let body = HashMap::from([("contact", contact)]);
+        let body = json!({
+            "contact": contact,
+        });
 
-        let response = self.0.post::<_, &str>(&endpoint, Some(body), None).await?;
+        let response = self
+            .0
+            .get_http()
+            .post(
+                self.0.get_token(),
+                &self.0.get_url(&endpoint),
+                &(None, Some(&body)),
+            )
+            .await?;
 
-        serde_json::from_str::<AliasUpdateConcactData>(&response)
+        serde_json::from_str::<AliasContactData>(&response)
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 }
