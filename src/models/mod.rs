@@ -2,6 +2,8 @@ use serde::Deserialize;
 
 pub mod account;
 pub mod alias;
+pub mod contact;
+pub mod custom_domain;
 pub mod mailbox;
 
 #[derive(Debug, Deserialize)]
