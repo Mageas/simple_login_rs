@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::SimpleLoginResult;
 
 pub type Headers = HashMap<String, String>;
-pub type Query<'a> = HashMap<&'a str, &'a str>;
+pub type Query<'a> = HashMap<&'a str, String>;
 pub type Payload<'a> = (Option<&'a Query<'a>>, Option<&'a Value>);
 
 #[async_trait]

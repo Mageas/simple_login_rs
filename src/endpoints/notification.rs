@@ -13,9 +13,7 @@ impl<S: SimpleLogin> EndpointsNotification<'_, S> {
     pub async fn list(self, page: usize) -> SimpleLoginResult<NotificationsData> {
         let endpoint = &format!("api/notifications");
 
-        let page = page.to_string();
-
-        let query = HashMap::from([("page", page.as_str())]);
+        let query = HashMap::from([("page", page.to_string())]);
 
         let response = self
             .0
@@ -31,7 +29,6 @@ impl<S: SimpleLogin> EndpointsNotification<'_, S> {
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    // todo: unable to test the return type
     /// Mark as read a notification
     pub async fn read(self, notification_id: usize) -> SimpleLoginResult<OkData> {
         let endpoint = &format!("api/notifications/{notification_id}");

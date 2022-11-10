@@ -45,7 +45,7 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
         self,
         alias_prefix: &str,
         signed_suffix: &str,
-        mailbox_ids: &[&str],
+        mailbox_ids: &[usize],
         note: Option<&str>,
         name: Option<&str>,
     ) -> SimpleLoginResult<AliasData> {
@@ -56,7 +56,7 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             hostname: &'a str,
             alias_prefix: &'a str,
             signed_suffix: &'a str,
-            mailbox_ids: &'a [&'a str],
+            mailbox_ids: &'a [usize],
             #[serde(skip_serializing_if = "Option::is_none")]
             note: Option<&'a str>,
             #[serde(skip_serializing_if = "Option::is_none")]
@@ -87,11 +87,10 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    // todo: mode to Enum
     /// Random an alias
     pub async fn create_random(
         self,
-        mode: Option<&str>,
+        mode: Option<AliasMode>,
         note: Option<&str>,
     ) -> SimpleLoginResult<AliasData> {
         let endpoint = "api/alias/random/new";
@@ -99,12 +98,21 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
         #[derive(serde::Serialize)]
         struct Body<'a> {
             #[serde(skip_serializing_if = "Option::is_none")]
-            mode: Option<&'a str>,
-            #[serde(skip_serializing_if = "Option::is_none")]
             note: Option<&'a str>,
         }
 
-        let body = serde_json::to_value(Body { mode, note }).unwrap();
+        #[allow(unused_assignments)]
+        let mut temp_query = HashMap::new();
+
+        let query = match mode {
+            Some(mode) => {
+                temp_query = HashMap::from([("mode", mode.to_string())]);
+                Some(&temp_query)
+            }
+            None => None,
+        };
+
+        let body = serde_json::to_value(Body { note }).unwrap();
 
         let response = self
             .0
@@ -112,7 +120,7 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             .post(
                 self.0.get_token(),
                 &self.0.get_url(&endpoint),
-                &(None, Some(&body)),
+                &(query, Some(&body)),
             )
             .await?;
 
@@ -120,15 +128,20 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    // todo: filter to Enum
-    // todo: update hashmap type
     /// Get user's aliases
-    pub async fn list(self, page_id: usize, filter: &str) -> SimpleLoginResult<Vec<AliasData>> {
+    pub async fn list(
+        self,
+        page_id: usize,
+        filter: AliasFilter,
+    ) -> SimpleLoginResult<Vec<AliasData>> {
         let endpoint = "api/v2/aliases";
 
-        let page_id = page_id.to_string();
+        let filter = filter.to_string();
 
-        let query = HashMap::from([("page_id", page_id.as_str()), (filter, "")]);
+        let query = HashMap::from([
+            ("page_id", page_id.to_string()),
+            (filter.as_str(), "".to_owned()),
+        ]);
 
         let response = self
             .0
@@ -199,7 +212,6 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    // todo: update hashmap type
     /// Get alias activities
     pub async fn activities(
         self,
@@ -208,9 +220,7 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
     ) -> SimpleLoginResult<Vec<AliasActivityData>> {
         let endpoint = &format!("api/aliases/{alias_id}/activities");
 
-        let page_id = page_id.to_string();
-
-        let query = HashMap::from([("page_id", page_id.as_str())]);
+        let query = HashMap::from([("page_id", page_id.to_string())]);
 
         let response = self
             .0
@@ -233,7 +243,7 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
         alias_id: usize,
         note: Option<&str>,
         name: Option<&str>,
-        mailbox_ids: Option<&[&str]>,
+        mailbox_ids: Option<&[usize]>,
         disable_pgp: Option<bool>,
         pinned: Option<bool>,
     ) -> SimpleLoginResult<OkData> {
@@ -247,7 +257,7 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             #[serde(skip_serializing_if = "Option::is_none")]
             name: Option<&'a str>,
             #[serde(skip_serializing_if = "Option::is_none")]
-            mailbox_ids: Option<&'a [&'a str]>,
+            mailbox_ids: Option<&'a [usize]>,
             #[serde(skip_serializing_if = "Option::is_none")]
             disable_pgp: Option<bool>,
             #[serde(skip_serializing_if = "Option::is_none")]
@@ -278,7 +288,6 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    // todo: update hashmap type
     /// Get alias contacts
     pub async fn contacts(
         self,
@@ -287,9 +296,7 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
     ) -> SimpleLoginResult<Vec<AliasContactData>> {
         let endpoint = &format!("api/aliases/{alias_id}/contacts");
 
-        let page_id = page_id.to_string();
-
-        let query = HashMap::from([("page_id", page_id.as_str())]);
+        let query = HashMap::from([("page_id", page_id.to_string())]);
 
         let response = self
             .0
@@ -330,5 +337,35 @@ impl<S: SimpleLogin> EndpointsAlias<'_, S> {
 
         serde_json::from_str::<AliasContactData>(&response)
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
+    }
+}
+
+pub enum AliasFilter {
+    Pinned,
+    Disabled,
+    Enabled,
+}
+
+impl std::fmt::Display for AliasFilter {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            AliasFilter::Pinned => write!(f, "pinned"),
+            AliasFilter::Disabled => write!(f, "disabled"),
+            AliasFilter::Enabled => write!(f, "enabled"),
+        }
+    }
+}
+
+pub enum AliasMode {
+    Uuid,
+    Word,
+}
+
+impl std::fmt::Display for AliasMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            AliasMode::Uuid => write!(f, "uuid"),
+            AliasMode::Word => write!(f, "word"),
+        }
     }
 }

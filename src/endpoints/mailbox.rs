@@ -33,7 +33,7 @@ impl<S: SimpleLogin> EndpointsMailbox<'_, S> {
     }
 
     /// Delete a mailbox
-    pub async fn delete(self, mailbox_id: &str) -> SimpleLoginResult<DeletedData> {
+    pub async fn delete(self, mailbox_id: usize) -> SimpleLoginResult<DeletedData> {
         let endpoint = &format!("api/mailboxes/{mailbox_id}");
 
         let response = self
@@ -53,7 +53,7 @@ impl<S: SimpleLogin> EndpointsMailbox<'_, S> {
     /// Update a mailbox
     pub async fn update(
         self,
-        mailbox_id: &str,
+        mailbox_id: usize,
         default: Option<bool>,
         email: Option<&str>,
         cancel_email_change: Option<bool>,

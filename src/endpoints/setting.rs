@@ -26,30 +26,29 @@ impl<S: SimpleLogin> EndpointsSetting<'_, S> {
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
 
-    // todo: update &str to Enums (even in the return type)
     /// Update user's settings
     pub async fn update(
         self,
-        alias_generator: Option<&str>,
+        alias_generator: Option<AliasGenerator>,
         notification: Option<bool>,
         random_alias_default_domain: Option<&str>,
-        random_alias_suffix: Option<&str>,
-        sender_format: Option<&str>,
+        random_alias_suffix: Option<AliasRandomAliasSuffix>,
+        sender_format: Option<AliasSenderFormat>,
     ) -> SimpleLoginResult<SettingData> {
         let endpoint = "api/setting";
 
         #[derive(serde::Serialize)]
         struct Body<'a> {
             #[serde(skip_serializing_if = "Option::is_none")]
-            alias_generator: Option<&'a str>,
+            alias_generator: Option<AliasGenerator>,
             #[serde(skip_serializing_if = "Option::is_none")]
             notification: Option<bool>,
             #[serde(skip_serializing_if = "Option::is_none")]
             random_alias_default_domain: Option<&'a str>,
             #[serde(skip_serializing_if = "Option::is_none")]
-            random_alias_suffix: Option<&'a str>,
+            random_alias_suffix: Option<AliasRandomAliasSuffix>,
             #[serde(skip_serializing_if = "Option::is_none")]
-            sender_format: Option<&'a str>,
+            sender_format: Option<AliasSenderFormat>,
         }
 
         let body = serde_json::to_value(Body {
@@ -92,4 +91,34 @@ impl<S: SimpleLogin> EndpointsSetting<'_, S> {
         serde_json::from_str::<Vec<SettingDomainData>>(&response)
             .map_err(|e| SimpleLoginError::DeserializeApiResponse(e))
     }
+}
+
+#[derive(serde::Serialize)]
+pub enum AliasGenerator {
+    #[serde(rename = "uuid")]
+    Uuid,
+    #[serde(rename = "word")]
+    Word,
+}
+
+#[derive(serde::Serialize)]
+pub enum AliasRandomAliasSuffix {
+    #[serde(rename = "word")]
+    Word,
+    #[serde(rename = "random_string")]
+    RandomString,
+}
+
+#[derive(serde::Serialize)]
+pub enum AliasSenderFormat {
+    #[serde(rename = "AT")]
+    At,
+    #[serde(rename = "A")]
+    A,
+    #[serde(rename = "NAME_ONLY")]
+    NameOnly,
+    #[serde(rename = "AT_ONLY")]
+    AtOnly,
+    #[serde(rename = "NO_NAME")]
+    NoName,
 }
