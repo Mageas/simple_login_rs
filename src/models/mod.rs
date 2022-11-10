@@ -5,6 +5,8 @@ pub mod alias;
 pub mod contact;
 pub mod custom_domain;
 pub mod mailbox;
+pub mod notification;
+pub mod setting;
 
 #[derive(Debug, Deserialize)]
 pub struct ErrorData {

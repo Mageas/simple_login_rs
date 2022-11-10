@@ -5,6 +5,8 @@ pub use alias::*;
 pub use contact::*;
 pub use custom_domain::*;
 pub use mailbox::*;
+pub use notification::*;
+pub use setting::*;
 
 use crate::{SimpleLoginError, SimpleLoginResult};
 
@@ -13,6 +15,8 @@ mod alias;
 mod contact;
 mod custom_domain;
 mod mailbox;
+mod notification;
+mod setting;
 mod utils;
 
 pub trait SimpleLogin {
@@ -75,6 +79,14 @@ impl<'a> SimpleLoginClient<'a> {
 
     pub fn contact(&self) -> EndpointsContact<'_, Self> {
         EndpointsContact(self)
+    }
+
+    pub fn notification(&self) -> EndpointsNotification<'_, Self> {
+        EndpointsNotification(self)
+    }
+
+    pub fn setting(&self) -> EndpointsSetting<'_, Self> {
+        EndpointsSetting(self)
     }
 }
 
