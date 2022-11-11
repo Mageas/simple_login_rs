@@ -130,8 +130,6 @@ impl HttpClient {
             .await
             .map_err(|e| SimpleLoginError::Request(e, url.into()))?;
 
-        dbg!(&response);
-
         utils::parse_error_from_response(&response, status, url).await?;
 
         Ok(response)
