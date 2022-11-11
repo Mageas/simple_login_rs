@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SettingData {
     pub alias_generator: String,
     pub notification: bool,
@@ -9,7 +9,7 @@ pub struct SettingData {
     pub sender_format: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SettingDomainData {
     pub domain: String,
     pub is_custom: bool,

@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct LoginData {
     pub api_key: Option<String>,
     pub email: String,
@@ -9,14 +9,14 @@ pub struct LoginData {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct MfaData {
     pub api_key: String,
     pub email: String,
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct UserInfoData {
     pub connected_proton_address: Option<String>,
     pub email: String,
@@ -27,12 +27,12 @@ pub struct UserInfoData {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct CookieTokenData {
     pub token: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ApiKeyData {
     pub api_key: String,
 }
